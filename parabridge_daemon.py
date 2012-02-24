@@ -5,17 +5,23 @@ import sys
 import argparse
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
-g_fShutdown = False
+class Server( SimpleXMLRPCServer, object ) :
 
-def stop() :
-  global g_fShutdown
-  g_fShutdown = True
+  def __init__( self, i_nPort ) :
+    gAddr = ( 'localhost', i_nPort )
+    super( Server, self ).__init__( gAddr, allow_none = True )
+    self.fShutdown = False
+    self.register_function( self.stop )
+
+  def serve_forever( self ) :
+    while not self.fShutdown :
+      self.handle_request()
+
+  def stop( self ) :
+    self.fShutdown = True
 
 oParser = argparse.ArgumentParser( description = "Parabridge daemon" )
 oParser.add_argument( 'port', type = int, help = "Port to listen on" )
 oArgs = oParser.parse_args()
-oServer = SimpleXMLRPCServer( ( 'localhost', oArgs.port ), allow_none = True )
-oServer.register_function( stop )
-while not g_fShutdown :
-  oServer.handle_request()
+Server( oArgs.port ).serve_forever()
 
