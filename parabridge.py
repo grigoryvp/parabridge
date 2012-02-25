@@ -22,9 +22,7 @@ class Config( object ) :
     return i_oClass.m_oInstance
 
   def __init__( self ) :
-    self.m_mItems = {
-      'tasks' : []
-    }
+    self.m_mItems = { 'tasks' : [] }
     sPath = os.path.expanduser( "~/.parabridge" )
     if os.path.exists( sPath ) :
       self.m_mItems.update( json.load( open( sPath ) ) )

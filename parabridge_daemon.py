@@ -5,6 +5,24 @@ import sys
 import argparse
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
+class Config( object ) :
+
+  m_oInstance = None
+
+  def __new__( i_oClass ) :
+    if not i_oClass.m_oInstance :
+      i_oClass.m_oInstance = super( Config, i_oClass ).__new__( i_oClass )
+    return i_oClass.m_oInstance
+
+  def __init__( self ) :
+    self.m_mItems = { 'tasks' : [] }
+    reload()
+
+  def reload( self ) :
+    sPath = os.path.expanduser( "~/.parabridge" )
+    if os.path.exists( sPath ) :
+      self.m_mItems.update( json.load( open( sPath ) ) )
+
 class Server( SimpleXMLRPCServer, object ) :
 
   def __init__( self, i_nPort ) :
@@ -21,7 +39,7 @@ class Server( SimpleXMLRPCServer, object ) :
     self.fShutdown = True
 
   def cfg_changed( self ) :
-    pass
+    Config().reload()
 
 oParser = argparse.ArgumentParser( description = "Parabridge daemon" )
 oParser.add_argument( 'port', type = int, help = "Port to listen on" )
