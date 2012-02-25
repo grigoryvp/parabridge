@@ -27,7 +27,8 @@ class Server( SimpleXMLRPCServer, object ) :
 
   def __init__( self, i_nPort ) :
     gAddr = ( 'localhost', i_nPort )
-    super( Server, self ).__init__( gAddr, allow_none = True )
+    mArgs = { 'allow_none' : True, 'logRequests' : False }
+    super( Server, self ).__init__( gAddr, ** mArgs )
     self.fShutdown = False
     self.register_function( self.stop )
 
