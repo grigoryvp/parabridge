@@ -20,6 +20,9 @@ class Server( SimpleXMLRPCServer, object ) :
   def stop( self ) :
     self.fShutdown = True
 
+  def cfg_changed( self ) :
+    pass
+
 oParser = argparse.ArgumentParser( description = "Parabridge daemon" )
 oParser.add_argument( 'port', type = int, help = "Port to listen on" )
 oArgs = oParser.parse_args()

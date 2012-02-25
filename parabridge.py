@@ -7,8 +7,10 @@ import argparse
 import subprocess
 import xmlrpclib
 import json
+import socket
 
 COMM_PORT = 17963
+COMM_ADDR = 'http://localhost:{0}/'.format( COMM_PORT )
 
 class Config( object ) :
 
@@ -31,6 +33,11 @@ class Config( object ) :
     self.m_mItems[ i_sName ] = i_uVal
     sPath = os.path.expanduser( "~/.parabridge" )
     json.dump( self.m_mItems, open( sPath, 'w' ) )
+    try :
+      oSrv = xmlrpclib.ServerProxy( COMM_ADDR )
+      oSrv.cfg_changed()
+    except socket.error :
+      pass
 
   def get( self, i_sName ) :
     return self.m_mItems[ i_sName ]
@@ -40,8 +47,11 @@ def start() :
   subprocess.Popen( [ 'python', sFile, str( COMM_PORT ) ] )
 
 def stop() :
-  oSrv = xmlrpclib.ServerProxy( 'http://localhost:{0}/'.format( COMM_PORT ) )
-  oSrv.stop()
+  try :
+    oSrv = xmlrpclib.ServerProxy( COMM_ADDR )
+    oSrv.stop()
+  except socket.error :
+    pass
 
 oParser = argparse.ArgumentParser( description = "Paradox to MySQL bridge." )
 oSubparsers = oParser.add_subparsers()
