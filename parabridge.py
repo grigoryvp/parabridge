@@ -23,6 +23,7 @@ HELP_TASK_ADD = """Adds task with specified name (name can be used later
   to manage tasks), path to source Paradox database directory and path
   to destination SQLite database file."""
 HELP_TASK_DEL = """Deletes task with specified name."""
+HELP_TASK_LIST = """Displays list of added tasks."""
 
 class Config( object ) :
 
@@ -67,6 +68,7 @@ def task_add( i_oArgs ) :
   for mTask in Config().get( 'tasks' ) :
     if i_oArgs.task_name == mTask[ 'name' ] :
       logging.warning( "Already has '{0}' task".format( i_oArgs.task_name ) )
+      return
   mTask = {
     'name' : i_oArgs.task_name,
     'src' : i_oArgs.task_src,
@@ -83,6 +85,17 @@ def task_del( i_oArgs ) :
       return
   logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
 
+def task_list( i_oArgs ) :
+  lTasks = Config().get( 'tasks' )
+  if 0 == len( lTasks ) :
+    print( "Tasks list is empty." )
+    return
+  for mTask in lTasks :
+    print( "{0}\n  Source: {1}\n  Destination: {2}".format(
+      mTask[ 'name' ],
+      mTask[ 'src' ],
+      mTask[ 'dst' ] ) )
+
 oParser = argparse.ArgumentParser( description = HELP_APP )
 oSubparsers = oParser.add_subparsers()
 oSubparser = oSubparsers.add_parser( 'start', help = HELP_START )
@@ -97,6 +110,8 @@ oSubparser.add_argument( 'task_dst' )
 oSubparser = oSubparsers.add_parser( 'task_del', help = HELP_TASK_DEL )
 oSubparser.set_defaults( handler = task_del )
 oSubparser.add_argument( 'task_name' )
+oSubparser = oSubparsers.add_parser( 'task_list', help = HELP_TASK_LIST )
+oSubparser.set_defaults( handler = task_list )
 oArgs = oParser.parse_args()
 oArgs.handler( oArgs )
 
