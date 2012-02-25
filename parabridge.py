@@ -6,8 +6,34 @@ import sys
 import argparse
 import subprocess
 import xmlrpclib
+import json
 
 COMM_PORT = 17963
+
+class Config( object ) :
+
+  m_oInstance = None
+
+  def __new__( i_oClass ) :
+    if not i_oClass.m_oInstance :
+      i_oClass.m_oInstance = super( Config, i_oClass ).__new__( i_oClass )
+    return i_oClass.m_oInstance
+
+  def __init__( self ) :
+    self.m_mItems = {
+      'tasks' : []
+    }
+    sPath = os.path.expanduser( "~/.parabridge" )
+    if os.path.exists( sPath ) :
+      self.m_mItems.update( json.load( open( sPath ) ) )
+
+  def set( self, i_sName, i_uVal ) :
+    self.m_mItems[ i_sName ] = i_uVal
+    sPath = os.path.expanduser( "~/.parabridge" )
+    json.dump( self.m_mItems, open( sPath, 'w' ) )
+
+  def get( self, i_sName ) :
+    return self.m_mItems[ i_sName ]
 
 def start() :
   sFile = '{0}/parabridge_daemon.py'.format( sys.path[ 0 ] )
