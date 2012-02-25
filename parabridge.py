@@ -8,6 +8,7 @@ import subprocess
 import xmlrpclib
 import json
 import socket
+import logging
 
 COMM_PORT = 17963
 COMM_ADDR = 'http://localhost:{0}/'.format( COMM_PORT )
@@ -21,6 +22,7 @@ HELP_STOP = """Stops background process that was previously started with
 HELP_TASK_ADD = """Adds task with specified name (name can be used later
   to manage tasks), path to source Paradox database directory and path
   to destination SQLite database file."""
+HELP_TASK_DEL = """Deletes task with specified name."""
 
 class Config( object ) :
 
@@ -69,6 +71,15 @@ def task_add( i_oArgs ) :
   }
   Config().set( 'tasks', Config().get( 'tasks' ) + [ mTask ] )
 
+def task_del( i_oArgs ) :
+  lTasks = Config().get( 'tasks' )
+  for mTask in lTasks :
+    if i_oArgs.task_name == mTask[ 'name' ] :
+      lTasks.remove( mTask )
+      Config().set( 'tasks', lTasks )
+      return
+  logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
+
 oParser = argparse.ArgumentParser( description = HELP_APP )
 oSubparsers = oParser.add_subparsers()
 oSubparser = oSubparsers.add_parser( 'start', help = HELP_START )
@@ -80,6 +91,9 @@ oSubparser.set_defaults( handler = task_add )
 oSubparser.add_argument( 'task_name' )
 oSubparser.add_argument( 'task_src' )
 oSubparser.add_argument( 'task_dst' )
+oSubparser = oSubparsers.add_parser( 'task_del', help = HELP_TASK_DEL )
+oSubparser.set_defaults( handler = task_del )
+oSubparser.add_argument( 'task_name' )
 oArgs = oParser.parse_args()
 oArgs.handler( oArgs )
 
