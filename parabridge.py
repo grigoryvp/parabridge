@@ -64,6 +64,9 @@ def stop( i_oArgs ) :
     pass
 
 def task_add( i_oArgs ) :
+  for mTask in Config().get( 'tasks' ) :
+    if i_oArgs.task_name == mTask[ 'name' ] :
+      logging.warning( "Already has '{0}' task".format( i_oArgs.task_name ) )
   mTask = {
     'name' : i_oArgs.task_name,
     'src' : i_oArgs.task_src,
