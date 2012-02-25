@@ -62,9 +62,12 @@ def stop( i_oArgs ) :
     pass
 
 def task_add( i_oArgs ) :
-  print( i_oArgs.task_name )
-  print( i_oArgs.task_src )
-  print( i_oArgs.task_dst )
+  mTask = {
+    'name' : i_oArgs.task_name,
+    'src' : i_oArgs.task_src,
+    'dst' : i_oArgs.task_dst
+  }
+  Config().set( 'tasks', Config().get( 'tasks' ) + [ mTask ] )
 
 oParser = argparse.ArgumentParser( description = HELP_APP )
 oSubparsers = oParser.add_subparsers()
