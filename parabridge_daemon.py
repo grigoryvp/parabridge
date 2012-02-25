@@ -3,6 +3,9 @@
 
 import sys
 import argparse
+import threading
+import time
+import socket
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 class Config( object ) :
@@ -22,6 +25,23 @@ class Config( object ) :
     sPath = os.path.expanduser( "~/.parabridge" )
     if os.path.exists( sPath ) :
       self.m_mItems.update( json.load( open( sPath ) ) )
+
+class Worker( threading.Thread ) :
+
+  m_oInstance = None
+
+  def __new__( i_oClass ) :
+    if not i_oClass.m_oInstance :
+      i_oClass.m_oInstance = super( Worker, i_oClass ).__new__( i_oClass )
+    return i_oClass.m_oInstance
+
+  def run( self ) :
+    self.m_fShutdown = False
+    while not self.m_fShutdown :
+      time.sleep( 1 )
+
+  def shutdown( self ) :
+    self.m_fShutdown = True
 
 class Server( SimpleXMLRPCServer, object ) :
 
@@ -45,5 +65,12 @@ class Server( SimpleXMLRPCServer, object ) :
 oParser = argparse.ArgumentParser( description = "Parabridge daemon" )
 oParser.add_argument( 'port', type = int, help = "Port to listen on" )
 oArgs = oParser.parse_args()
-Server( oArgs.port ).serve_forever()
+Worker().start()
+try :
+  Server( oArgs.port ).serve_forever()
+except socket.error :
+  ##  Unable to bind to port if already started.
+  pass
+finally :
+  Worker().shutdown()
 
