@@ -6,11 +6,15 @@ import argparse
 import threading
 import time
 import socket
+import os
+import json
+import re
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 class Config( object ) :
 
   m_oInstance = None
+  m_oTimeReloadLast = None
 
   def __new__( i_oClass ) :
     if not i_oClass.m_oInstance :
@@ -19,12 +23,15 @@ class Config( object ) :
 
   def __init__( self ) :
     self.m_mItems = { 'tasks' : [] }
-    reload()
+    self.reload()
 
   def reload( self ) :
     sPath = os.path.expanduser( "~/.parabridge" )
     if os.path.exists( sPath ) :
       self.m_mItems.update( json.load( open( sPath ) ) )
+      self.m_oTimeReloadLast = time.localtime()
+
+  def timeReloadLast( self ) : return self.m_oTimeReloadLast
 
 class Worker( threading.Thread ) :
 
@@ -61,7 +68,10 @@ class Server( SimpleXMLRPCServer, object ) :
     return True
 
   def status( self ) :
-    return "Daemon is running."
+    sMsg = """Daemon is running.
+      \tConfiguration reloaded: {0}""".format(
+      time.strftime( '%Y.%m.%d %H:%M:%S', Config().timeReloadLast() ) )
+    return re.sub( '\t', ' ', re.sub( ' +', ' ', sMsg ) )
 
   def cfg_changed( self ) :
     Config().reload()
