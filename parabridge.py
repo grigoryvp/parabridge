@@ -19,6 +19,7 @@ HELP_START = """Starts background process that will monitor Paradox
   databse."""
 HELP_STOP = """Stops background process that was previously started with
   'start'."""
+HELP_STATUS = """Shows current background process status."""
 HELP_TASK_ADD = """Adds task with specified name (name can be used later
   to manage tasks), path to source Paradox database directory and path
   to destination SQLite database file."""
@@ -64,6 +65,13 @@ def stop( i_oArgs ) :
   except socket.error :
     pass
 
+def status( i_oArgs ) :
+  try :
+    oSrv = xmlrpclib.ServerProxy( COMM_ADDR )
+    print( oSrv.status() )
+  except socket.error :
+    print( "Daemon is not running." )
+
 def task_add( i_oArgs ) :
   for mTask in Config().get( 'tasks' ) :
     if i_oArgs.task_name == mTask[ 'name' ] :
@@ -102,6 +110,8 @@ oSubparser = oSubparsers.add_parser( 'start', help = HELP_START )
 oSubparser.set_defaults( handler = start )
 oSubparser = oSubparsers.add_parser( 'stop', help = HELP_STOP )
 oSubparser.set_defaults( handler = stop )
+oSubparser = oSubparsers.add_parser( 'status', help = HELP_STATUS )
+oSubparser.set_defaults( handler = status )
 oSubparser = oSubparsers.add_parser( 'task_add', help = HELP_TASK_ADD )
 oSubparser.set_defaults( handler = task_add )
 oSubparser.add_argument( 'task_name' )

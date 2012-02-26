@@ -47,10 +47,10 @@ class Server( SimpleXMLRPCServer, object ) :
 
   def __init__( self, i_nPort ) :
     gAddr = ( 'localhost', i_nPort )
-    mArgs = { 'allow_none' : True, 'logRequests' : False }
-    super( Server, self ).__init__( gAddr, ** mArgs )
+    super( Server, self ).__init__( gAddr, logRequests = False )
     self.fShutdown = False
     self.register_function( self.stop )
+    self.register_function( self.status )
 
   def serve_forever( self ) :
     while not self.fShutdown :
@@ -58,6 +58,10 @@ class Server( SimpleXMLRPCServer, object ) :
 
   def stop( self ) :
     self.fShutdown = True
+    return True
+
+  def status( self ) :
+    return "Daemon is running."
 
   def cfg_changed( self ) :
     Config().reload()
