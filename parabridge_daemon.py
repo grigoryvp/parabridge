@@ -13,42 +13,48 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 class Config( object ) :
 
-  m_oInstance = None
   m_oTimeReloadLast = None
+  m_mItems = { 'tasks' : [] }
 
-  def __new__( i_oClass ) :
-    if not i_oClass.m_oInstance :
-      i_oClass.m_oInstance = super( Config, i_oClass ).__new__( i_oClass )
-    return i_oClass.m_oInstance
-
-  def __init__( self ) :
-    self.m_mItems = { 'tasks' : [] }
-    self.reload()
-
+  @classmethod
   def reload( self ) :
     sPath = os.path.expanduser( "~/.parabridge" )
     if os.path.exists( sPath ) :
       self.m_mItems.update( json.load( open( sPath ) ) )
       self.m_oTimeReloadLast = time.localtime()
+      Worker.instance().cfgChanged()
 
-  def timeReloadLast( self ) : return self.m_oTimeReloadLast
+  @classmethod
+  def get( self ) :
+    return self.m_mItems
+
+  @classmethod
+  def timeReloadLast( self ) :
+    return self.m_oTimeReloadLast
 
 class Worker( threading.Thread ) :
 
   m_oInstance = None
 
-  def __new__( i_oClass ) :
-    if not i_oClass.m_oInstance :
-      i_oClass.m_oInstance = super( Worker, i_oClass ).__new__( i_oClass )
-    return i_oClass.m_oInstance
-
   def run( self ) :
     self.m_fShutdown = False
+    mCfg = Config().get()
     while not self.m_fShutdown :
+      if self.m_fCfgChanged :
+        mCfg = Config().get()
+        self.m_fCfgChanged = False
       time.sleep( 1 )
 
   def shutdown( self ) :
     self.m_fShutdown = True
+
+  @classmethod
+  def instance( self ) :
+    if not self.m_oInstance :
+      self.m_oInstance = Worker()
+    return self.m_oInstance
+
+  def cfgChanged( self ) : self.m_fCfgChanged = True
 
 class Server( SimpleXMLRPCServer, object ) :
 
@@ -58,6 +64,7 @@ class Server( SimpleXMLRPCServer, object ) :
     self.fShutdown = False
     self.register_function( self.stop )
     self.register_function( self.status )
+    self.register_function( self.cfg_changed )
 
   def serve_forever( self ) :
     while not self.fShutdown :
@@ -75,16 +82,19 @@ class Server( SimpleXMLRPCServer, object ) :
 
   def cfg_changed( self ) :
     Config().reload()
+    return True
 
 oParser = argparse.ArgumentParser( description = "Parabridge daemon" )
 oParser.add_argument( 'port', type = int, help = "Port to listen on" )
 oArgs = oParser.parse_args()
-Worker().start()
+
+Config.reload()
+Worker.instance().start()
 try :
   Server( oArgs.port ).serve_forever()
 except socket.error :
   ##  Unable to bind to port if already started.
   pass
 finally :
-  Worker().shutdown()
+  Worker.instance().shutdown()
 

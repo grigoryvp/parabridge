@@ -28,19 +28,12 @@ HELP_TASK_LIST = """Displays list of added tasks."""
 
 class Config( object ) :
 
-  m_oInstance = None
+  m_mItems = { 'tasks' : [] }
+  sPath = os.path.expanduser( "~/.parabridge" )
+  if os.path.exists( sPath ) :
+    m_mItems.update( json.load( open( sPath ) ) )
 
-  def __new__( i_oClass ) :
-    if not i_oClass.m_oInstance :
-      i_oClass.m_oInstance = super( Config, i_oClass ).__new__( i_oClass )
-    return i_oClass.m_oInstance
-
-  def __init__( self ) :
-    self.m_mItems = { 'tasks' : [] }
-    sPath = os.path.expanduser( "~/.parabridge" )
-    if os.path.exists( sPath ) :
-      self.m_mItems.update( json.load( open( sPath ) ) )
-
+  @classmethod
   def set( self, i_sName, i_uVal ) :
     self.m_mItems[ i_sName ] = i_uVal
     sPath = os.path.expanduser( "~/.parabridge" )
@@ -51,6 +44,7 @@ class Config( object ) :
     except socket.error :
       pass
 
+  @classmethod
   def get( self, i_sName ) :
     return self.m_mItems[ i_sName ]
 
@@ -73,7 +67,7 @@ def status( i_oArgs ) :
     print( "Daemon is not running." )
 
 def task_add( i_oArgs ) :
-  for mTask in Config().get( 'tasks' ) :
+  for mTask in Config.get( 'tasks' ) :
     if i_oArgs.task_name == mTask[ 'name' ] :
       logging.warning( "Already has '{0}' task".format( i_oArgs.task_name ) )
       return
@@ -82,19 +76,19 @@ def task_add( i_oArgs ) :
     'src' : i_oArgs.task_src,
     'dst' : i_oArgs.task_dst
   }
-  Config().set( 'tasks', Config().get( 'tasks' ) + [ mTask ] )
+  Config.set( 'tasks', Config.get( 'tasks' ) + [ mTask ] )
 
 def task_del( i_oArgs ) :
-  lTasks = Config().get( 'tasks' )
+  lTasks = Config.get( 'tasks' )
   for mTask in lTasks :
     if i_oArgs.task_name == mTask[ 'name' ] :
       lTasks.remove( mTask )
-      Config().set( 'tasks', lTasks )
+      Config.set( 'tasks', lTasks )
       return
   logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
 
 def task_list( i_oArgs ) :
-  lTasks = Config().get( 'tasks' )
+  lTasks = Config.get( 'tasks' )
   if 0 == len( lTasks ) :
     print( "Tasks list is empty." )
     return
