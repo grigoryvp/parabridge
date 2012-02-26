@@ -36,14 +36,23 @@ class Worker( threading.Thread ) :
 
   m_oInstance = None
 
-  def run( self ) :
+  def __init__( self ) :
+    super( Worker, self ).__init__()
     self.m_fShutdown = False
+    self.m_mResults = {}
+
+  def run( self ) :
     mCfg = Config().get()
     while not self.m_fShutdown :
       if self.m_fCfgChanged :
         mCfg = Config().get()
         self.m_fCfgChanged = False
+      for mTask in mCfg[ 'tasks' ] :
+        self.processTask( mTask[ 'name' ], mTask[ 'src' ], mTask[ 'dst' ] )
       time.sleep( 1 )
+
+  def processTask( self, i_sName, i_sSrc, i_sDst ) :
+    self.m_mResults[ i_sName ] = "Not implemented."
 
   def shutdown( self ) :
     self.m_fShutdown = True
@@ -55,6 +64,8 @@ class Worker( threading.Thread ) :
     return self.m_oInstance
 
   def cfgChanged( self ) : self.m_fCfgChanged = True
+
+  def results( self ) : return self.m_mResults
 
 class Server( SimpleXMLRPCServer, object ) :
 
@@ -78,6 +89,11 @@ class Server( SimpleXMLRPCServer, object ) :
     sMsg = """Daemon is running.
       \tConfiguration reloaded: {0}""".format(
       time.strftime( '%Y.%m.%d %H:%M:%S', Config().timeReloadLast() ) )
+    mResults = Worker.instance().results()
+    lKeys = mResults.keys()
+    lKeys.sort()
+    for sKey in lKeys :
+      sMsg += "\n{0}:\n\t {1}".format( sKey, mResults[ sKey ] )
     return re.sub( '\t', ' ', re.sub( ' +', ' ', sMsg ) )
 
   def cfg_changed( self ) :
