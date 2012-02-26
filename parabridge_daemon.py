@@ -11,6 +11,11 @@ import json
 import re
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
+# Allow to import packages from 'vendor' subfolder.
+sys.path.append( '{0}/vendor'.format( sys.path[ 0 ] ) )
+
+import pyparadox
+
 class Config( object ) :
 
   m_oTimeReloadLast = None
