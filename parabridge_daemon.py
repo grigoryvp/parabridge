@@ -57,7 +57,12 @@ class Worker( threading.Thread ) :
       time.sleep( 1 )
 
   def processTask( self, i_sName, i_sSrc, i_sDst ) :
-    self.m_mResults[ i_sName ] = "Not implemented."
+    def setRes( i_sTxt ) :
+      self.m_mResults[ i_sName ] = i_sTxt
+    if not os.path.exists( i_sSrc ) :
+      return setRes( "Path \"{0}\" not found".format( i_sSrc ) )
+    sTime = time.strftime( '%Y.%m.%d %H:%M:%S' )
+    setRes( "Processed at {0}".format( sTime ) )
 
   def shutdown( self ) :
     self.m_fShutdown = True
@@ -95,9 +100,7 @@ class Server( SimpleXMLRPCServer, object ) :
       \tConfiguration reloaded: {0}""".format(
       time.strftime( '%Y.%m.%d %H:%M:%S', Config().timeReloadLast() ) )
     mResults = Worker.instance().results()
-    lKeys = mResults.keys()
-    lKeys.sort()
-    for sKey in lKeys :
+    for sKey in sorted( mResults.keys() ) :
       sMsg += "\n{0}:\n\t {1}".format( sKey, mResults[ sKey ] )
     return re.sub( '\t', ' ', re.sub( ' +', ' ', sMsg ) )
 
