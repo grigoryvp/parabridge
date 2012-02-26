@@ -21,8 +21,9 @@ HELP_STOP = """Stops background process that was previously started with
   'start'."""
 HELP_STATUS = """Shows current background process status."""
 HELP_TASK_ADD = """Adds task with specified name (name can be used later
-  to manage tasks), path to source Paradox database directory and path
-  to destination SQLite database file."""
+  to manage tasks), path to source Paradox database directory ('~' will
+  be expanded) and path to destination SQLite database file ('~' will
+  be expanded)."""
 HELP_TASK_DEL = """Deletes task with specified name."""
 HELP_TASK_LIST = """Displays list of added tasks."""
 

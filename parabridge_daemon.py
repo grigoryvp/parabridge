@@ -53,7 +53,9 @@ class Worker( threading.Thread ) :
         mCfg = Config().get()
         self.m_fCfgChanged = False
       for mTask in mCfg[ 'tasks' ] :
-        self.processTask( mTask[ 'name' ], mTask[ 'src' ], mTask[ 'dst' ] )
+        sSrc = os.path.expanduser( mTask[ 'src' ] )
+        sDst = os.path.expanduser( mTask[ 'dst' ] )
+        self.processTask( mTask[ 'name' ], sSrc, sDst )
       time.sleep( 1 )
 
   def processTask( self, i_sName, i_sSrc, i_sDst ) :
