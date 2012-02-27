@@ -65,6 +65,10 @@ class Worker( threading.Thread ) :
       return setRes( "Path \"{0}\" not found.".format( i_sSrc ) )
     if not os.path.isdir( i_sSrc ) :
       return setRes( "Path \"{0}\" is not a directory.".format( i_sSrc ) )
+    lSrcFiles = [ s for s in os.listdir( i_sSrc ) if os.path.isfile( s ) ]
+    lSrcFiles = [ s for s in lSrcFiles if s.endswith( "db" ) ]
+    if 0 == len( lSrcFiles ) :
+      return setRes( "No .db files in \"{0}\".".format( i_sSrc ) )
     sTime = time.strftime( '%Y.%m.%d %H:%M:%S' )
     setRes( "Processed at {0}.".format( sTime ) )
 
