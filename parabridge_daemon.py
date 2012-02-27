@@ -61,6 +61,7 @@ class Worker( threading.Thread ) :
   def processTask( self, i_sName, i_sSrc, i_sDst ) :
     def setRes( i_sTxt ) :
       self.m_mResults[ i_sName ] = i_sTxt
+      return False
     if not os.path.exists( i_sSrc ) :
       return setRes( "Path \"{0}\" not found.".format( i_sSrc ) )
     if not os.path.isdir( i_sSrc ) :
@@ -70,8 +71,19 @@ class Worker( threading.Thread ) :
     lSrcFiles = [ s for s in lSrcFiles if re.search( "(?i)\.db$", s ) ]
     if 0 == len( lSrcFiles ) :
       return setRes( "No .db files in \"{0}\".".format( i_sSrc ) )
+    lProcessed = []
+    for sSrcFile in lSrcFiles :
+      if self.processParadoxFile( sSrcFile, i_sDst ) :
+        lProcessed.append( True )
     sTime = time.strftime( '%Y.%m.%d %H:%M:%S' )
-    setRes( "Processed at {0}.".format( sTime ) )
+    nProcessed = len( lProcessed )
+    nTotal = len( lSrcFiles )
+    setRes( "Processed {0}/{1} at {2}.".format( nProcessed, nTotal, sTime ) )
+
+  ##x Process individual Paradox |.db| file and synchronize specified
+  ##  SQLite database file with it.
+  def processParadoxFile( self, i_sSrc, i_sDst ) :
+    return False
 
   def shutdown( self ) :
     self.m_fShutdown = True
