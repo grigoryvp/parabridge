@@ -66,6 +66,10 @@ class Worker( threading.Thread ) :
       return setRes( "Path \"{0}\" not found.".format( i_sSrc ) )
     if not os.path.isdir( i_sSrc ) :
       return setRes( "Path \"{0}\" is not a directory.".format( i_sSrc ) )
+    try :
+      os.makedirs( os.path.dirname( i_sDst ) )
+    except OSError :
+      pass
     lSrcFiles = [ i_sSrc + os.sep + s for s in os.listdir( i_sSrc ) ]
     lSrcFiles = [ s for s in lSrcFiles if os.path.isfile( s ) ]
     lSrcFiles = [ s for s in lSrcFiles if re.search( "(?i)\.db$", s ) ]
