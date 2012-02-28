@@ -87,7 +87,8 @@ class Worker( threading.Thread ) :
   ##x Process individual Paradox |.db| file and synchronize specified
   ##  SQLite database file with it.
   def processParadoxFile( self, i_sSrc, i_sDst ) :
-    return False
+    oDb = pyparadox.open( i_sSrc )
+    return True
 
   def shutdown( self ) :
     self.m_fShutdown = True
