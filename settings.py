@@ -3,6 +3,7 @@
 
 import os
 import json
+import xmlrpclib
 
 class Settings( object ) :
 
