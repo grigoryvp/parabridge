@@ -27,7 +27,7 @@ HELP_TASK_ADD = """Adds task with specified name (name can be used later
 HELP_TASK_DEL = """Deletes task with specified name."""
 HELP_TASK_LIST = """Displays list of added tasks."""
 
-class Config( object ) :
+class Settings( object ) :
 
   m_mItems = { 'tasks' : [] }
   sPath = os.path.expanduser( "~/.parabridge" )
@@ -68,7 +68,7 @@ def status( i_oArgs ) :
     print( "Daemon is not running." )
 
 def task_add( i_oArgs ) :
-  for mTask in Config.get( 'tasks' ) :
+  for mTask in Settings.get( 'tasks' ) :
     if i_oArgs.task_name == mTask[ 'name' ] :
       logging.warning( "Already has '{0}' task".format( i_oArgs.task_name ) )
       return
@@ -77,19 +77,19 @@ def task_add( i_oArgs ) :
     'src' : i_oArgs.task_src,
     'dst' : i_oArgs.task_dst
   }
-  Config.set( 'tasks', Config.get( 'tasks' ) + [ mTask ] )
+  Settings.set( 'tasks', Settings.get( 'tasks' ) + [ mTask ] )
 
 def task_del( i_oArgs ) :
-  lTasks = Config.get( 'tasks' )
+  lTasks = Settings.get( 'tasks' )
   for mTask in lTasks :
     if i_oArgs.task_name == mTask[ 'name' ] :
       lTasks.remove( mTask )
-      Config.set( 'tasks', lTasks )
+      Settings.set( 'tasks', lTasks )
       return
   logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
 
 def task_list( i_oArgs ) :
-  lTasks = Config.get( 'tasks' )
+  lTasks = Settings.get( 'tasks' )
   if 0 == len( lTasks ) :
     print( "Tasks list is empty." )
     return
