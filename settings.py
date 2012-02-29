@@ -27,6 +27,7 @@ class Settings( object ) :
     self.m_mItems[ i_sName ] = i_uVal
     sPath = os.path.expanduser( "~/.parabridge" )
     json.dump( self.m_mItems, open( sPath, 'w' ) )
+    ##  Notify daemon process so it can read updated settings.
     if m_fNotify :
       try :
         oSrv = xmlrpclib.ServerProxy( COMM_ADDR )
