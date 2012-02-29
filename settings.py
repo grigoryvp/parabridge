@@ -4,6 +4,7 @@
 import os
 import json
 import xmlrpclib
+import socket
 
 class Settings( object ) :
 
