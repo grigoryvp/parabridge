@@ -55,14 +55,14 @@ def task_add( i_oArgs ) :
     'src' : i_oArgs.task_src,
     'dst' : i_oArgs.task_dst
   }
-  Settings.set( 'tasks', Settings.get( 'tasks' ) + [ mTask ], notify = True )
+  Settings.set( 'tasks', Settings.get( 'tasks' ) + [ mTask ] )
 
 def task_del( i_oArgs ) :
   lTasks = Settings.get( 'tasks' )
   for mTask in lTasks :
     if i_oArgs.task_name == mTask[ 'name' ] :
       lTasks.remove( mTask )
-      Settings.set( 'tasks', lTasks, notify = True )
+      Settings.set( 'tasks', lTasks )
       return
   logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
 
@@ -77,6 +77,7 @@ def task_list( i_oArgs ) :
       mTask[ 'src' ],
       mTask[ 'dst' ] ) )
 
+Settings.init( notify = True )
 oParser = argparse.ArgumentParser( description = HELP_APP )
 oSubparsers = oParser.add_subparsers()
 oSubparser = oSubparsers.add_parser( 'start', help = HELP_START )
