@@ -9,6 +9,7 @@ import xmlrpclib
 import json
 import socket
 import logging
+from settings import Settings
 
 COMM_PORT = 17963
 COMM_ADDR = 'http://localhost:{0}/'.format( COMM_PORT )
@@ -26,28 +27,6 @@ HELP_TASK_ADD = """Adds task with specified name (name can be used later
   be expanded)."""
 HELP_TASK_DEL = """Deletes task with specified name."""
 HELP_TASK_LIST = """Displays list of added tasks."""
-
-class Settings( object ) :
-
-  m_mItems = { 'tasks' : [] }
-  sPath = os.path.expanduser( "~/.parabridge" )
-  if os.path.exists( sPath ) :
-    m_mItems.update( json.load( open( sPath ) ) )
-
-  @classmethod
-  def set( self, i_sName, i_uVal ) :
-    self.m_mItems[ i_sName ] = i_uVal
-    sPath = os.path.expanduser( "~/.parabridge" )
-    json.dump( self.m_mItems, open( sPath, 'w' ) )
-    try :
-      oSrv = xmlrpclib.ServerProxy( COMM_ADDR )
-      oSrv.cfg_changed()
-    except socket.error :
-      pass
-
-  @classmethod
-  def get( self, i_sName ) :
-    return self.m_mItems[ i_sName ]
 
 def start( i_oArgs ) :
   sFile = '{0}/parabridge_daemon.py'.format( sys.path[ 0 ] )
