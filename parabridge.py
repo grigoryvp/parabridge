@@ -10,9 +10,8 @@ import json
 import socket
 import logging
 from settings import Settings
+from common import *
 
-COMM_PORT = 17963
-COMM_ADDR = 'http://localhost:{0}/'.format( COMM_PORT )
 HELP_APP = """Paradox to SQLite bridge. This tool monitors specified
   Paradox database and reflects all changes to specified SQLite database
   that can be used by any application that has problems with Paradox."""

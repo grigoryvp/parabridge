@@ -5,6 +5,7 @@ import os
 import json
 import xmlrpclib
 import socket
+from common import *
 
 class Settings( object ) :
 
