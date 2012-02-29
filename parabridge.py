@@ -56,14 +56,14 @@ def task_add( i_oArgs ) :
     'src' : i_oArgs.task_src,
     'dst' : i_oArgs.task_dst
   }
-  Settings.set( 'tasks', Settings.get( 'tasks' ) + [ mTask ] )
+  Settings.set( 'tasks', Settings.get( 'tasks' ) + [ mTask ], notify = True )
 
 def task_del( i_oArgs ) :
   lTasks = Settings.get( 'tasks' )
   for mTask in lTasks :
     if i_oArgs.task_name == mTask[ 'name' ] :
       lTasks.remove( mTask )
-      Settings.set( 'tasks', lTasks )
+      Settings.set( 'tasks', lTasks, notify = True )
       return
   logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
 
