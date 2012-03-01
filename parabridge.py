@@ -46,28 +46,18 @@ def status( i_oArgs ) :
     print( "Daemon is not running." )
 
 def task_add( i_oArgs ) :
-  for mTask in Settings.get( 'tasks' ) :
-    if i_oArgs.task_name == mTask[ 'name' ] :
-      logging.warning( "Already has '{0}' task".format( i_oArgs.task_name ) )
-      return
-  mTask = {
-    'name' : i_oArgs.task_name,
-    'src' : i_oArgs.task_src,
-    'dst' : i_oArgs.task_dst
-  }
-  Settings.set( 'tasks', Settings.get( 'tasks' ) + [ mTask ] )
+  sName = i_oArgs.task_name
+  sSrc = i_oArgs.task_src
+  sDst = i_oArgs.task_dst
+  if not Settings.taskAdd( sName, sSrc, sDst ) :
+    logging.warning( "Already has '{0}' task".format( sName ) )
 
 def task_del( i_oArgs ) :
-  lTasks = Settings.get( 'tasks' )
-  for mTask in lTasks :
-    if i_oArgs.task_name == mTask[ 'name' ] :
-      lTasks.remove( mTask )
-      Settings.set( 'tasks', lTasks )
-      return
-  logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
+  if not Settings.taskDelByName( i_oArgs.task_name ) :
+    logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
 
 def task_list( i_oArgs ) :
-  lTasks = Settings.get( 'tasks' )
+  lTasks = Settings.taskList()
   if 0 == len( lTasks ) :
     print( "Tasks list is empty." )
     return
