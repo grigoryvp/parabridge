@@ -17,27 +17,6 @@ sys.path.append( '{0}/vendor'.format( sys.path[ 0 ] ) )
 
 import pyparadox
 
-class Config( object ) :
-
-  m_oTimeReloadLast = None
-  m_mItems = { 'tasks' : [] }
-
-  @classmethod
-  def reload( self ) :
-    sPath = os.path.expanduser( "~/.parabridge" )
-    if os.path.exists( sPath ) :
-      self.m_mItems.update( json.load( open( sPath ) ) )
-      self.m_oTimeReloadLast = time.localtime()
-      Worker.instance().cfgChanged()
-
-  @classmethod
-  def get( self ) :
-    return self.m_mItems
-
-  @classmethod
-  def timeReloadLast( self ) :
-    return self.m_oTimeReloadLast
-
 class Worker( threading.Thread ) :
 
   m_oInstance = None
@@ -45,15 +24,17 @@ class Worker( threading.Thread ) :
   def __init__( self ) :
     super( Worker, self ).__init__()
     self.m_fShutdown = False
+    self.m_fCfgChanged = True
     self.m_mResults = {}
+    self.m_oTimeReloadLast = None
 
   def run( self ) :
-    mCfg = Config().get()
     while not self.m_fShutdown :
       if self.m_fCfgChanged :
-        mCfg = Config().get()
+        lTasks = Settings.taskList()
         self.m_fCfgChanged = False
-      for mTask in mCfg[ 'tasks' ] :
+        self.m_oTimeReloadLast = time.localtime()
+      for mTask in lTasks :
         sSrc = os.path.expanduser( mTask[ 'src' ] )
         sDst = os.path.expanduser( mTask[ 'dst' ] )
         self.processTask( mTask[ 'name' ], sSrc, sDst )
@@ -77,12 +58,13 @@ class Worker( threading.Thread ) :
     if 0 == len( lSrcFiles ) :
       return setRes( "No .db files in \"{0}\".".format( i_sSrc ) )
     lProcessed = []
-    for sSrcFile in lSrcFiles :
+    nTotal = len( lSrcFiles )
+    for i, sSrcFile in enumerate( lSrcFiles ) :
+      setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
       if self.processParadoxFile( sSrcFile, i_sDst ) :
         lProcessed.append( True )
     sTime = time.strftime( '%Y.%m.%d %H:%M:%S' )
     nProcessed = len( lProcessed )
-    nTotal = len( lSrcFiles )
     setRes( "Processed {0}/{1} at {2}.".format( nProcessed, nTotal, sTime ) )
 
   ##x Process individual Paradox |.db| file and synchronize specified
@@ -104,6 +86,8 @@ class Worker( threading.Thread ) :
 
   def results( self ) : return self.m_mResults
 
+  def timeReloadLast( self ) : return self.m_oTimeReloadLast
+
 class Server( SimpleXMLRPCServer, object ) :
 
   def __init__( self, i_nPort ) :
@@ -123,16 +107,17 @@ class Server( SimpleXMLRPCServer, object ) :
     return True
 
   def status( self ) :
+    oTimeReloadLast = Worker.instance().timeReloadLast()
     sMsg = """Daemon is running.
       \tConfiguration reloaded: {0}""".format(
-      time.strftime( '%Y.%m.%d %H:%M:%S', Config().timeReloadLast() ) )
+      time.strftime( '%Y.%m.%d %H:%M:%S', oTimeReloadLast ) )
     mResults = Worker.instance().results()
     for sKey in sorted( mResults.keys() ) :
       sMsg += "\n{0}:\n\t {1}".format( sKey, mResults[ sKey ] )
     return re.sub( '\t', ' ', re.sub( ' +', ' ', sMsg ) )
 
   def cfg_changed( self ) :
-    Config().reload()
+    Worker.instance().cfgChanged()
     return True
 
 Settings.init()
@@ -140,7 +125,6 @@ oParser = argparse.ArgumentParser( description = "Parabridge daemon" )
 oParser.add_argument( 'port', type = int, help = "Port to listen on" )
 oArgs = oParser.parse_args()
 
-Config.reload()
 Worker.instance().start()
 try :
   Server( oArgs.port ).serve_forever()
