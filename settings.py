@@ -9,11 +9,17 @@ import sqlite3
 import uuid
 from common import *
 
-SQL_CREATE = """CREATE TABLE IF NOT EXISTS task (
-  guid TEXT,
-  name TEXT UNIQUE,
-  src TEXT,
-  dst TEXT)"""
+SQL_CREATE = """
+  CREATE TABLE IF NOT EXISTS task (
+    guid TEXT UNIQUE,
+    name TEXT UNIQUE,
+    src TEXT,
+    dst TEXT);
+  CREATE TABLE IF NOT EXISTS index_last (
+    guid TEXT,
+    name TEXT,
+    index_last INTEGER);
+"""
 SQL_TASK_ADD = """INSERT INTO task (guid, name, src, dst)
   VALUES (:guid, :name, :src, :dst)"""
 SQL_TASK_LIST = """SELECT * FROM task"""
@@ -29,7 +35,7 @@ class Settings( object ) :
     self.m_fNotify = notify
     self.m_fInit = True
     with sqlite3.connect( FILE_CFG ) as oConn :
-      oConn.execute( SQL_CREATE )
+      oConn.executescript( SQL_CREATE )
 
   ##  Notify daemon process so it can read updated settings.
   @classmethod
