@@ -24,6 +24,8 @@ SQL_TASK_ADD = """INSERT INTO task (guid, name, src, dst)
   VALUES (:guid, :name, :src, :dst)"""
 SQL_TASK_LIST = """SELECT * FROM task"""
 SQL_TASK_DEL_BY_NAME = """DELETE FROM task WHERE name = :name"""
+SQL_TASK_GUID_BY_NAME = """SELECT guid FROM task WHERE name = :name"""
+SQL_INDEX_LAST_DEL = """DELETE FROM index_last WHERE guid = :guid"""
 
 class Settings( object ) :
 
@@ -67,9 +69,19 @@ class Settings( object ) :
   @classmethod
   def taskDelByName( self, i_sName ) :
     with sqlite3.connect( FILE_CFG ) as oConn :
-      oRet = oConn.execute( SQL_TASK_DEL_BY_NAME, { 'name' : i_sName } )
-      self.notifyIfNeeded()
-      return 1 == oRet.rowcount
+      try :
+        mArgs = { 'name' : i_sName }
+        oRow = oConn.execute( SQL_TASK_GUID_BY_NAME, mArgs ).fetchone()
+        if oRow is None :
+          return False
+        mArgs[ 'guid' ] = oRow[ 'guid' ]
+        oRet = oConn.execute( SQL_TASK_DEL_BY_NAME, mArgs )
+        if 0 == oRet.rowcount :
+          raise Exception( "Consistency error" )
+        oConn.execute( SQL_INDEX_LAST_DEL, mArgs )
+        return True
+      finally :
+        self.notifyIfNeeded()
 
   @classmethod
   def taskList( self ) :
