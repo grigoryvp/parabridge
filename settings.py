@@ -13,10 +13,9 @@ SQL_CREATE = """CREATE TABLE IF NOT EXISTS task (
   guid TEXT,
   name TEXT UNIQUE,
   src TEXT,
-  dst TEXT,
-  index_last INTEGER)"""
-SQL_TASK_ADD = """INSERT INTO task (guid, name, src, dst, index_last)
-  VALUES (:guid, :name, :src, :dst, :index_last)"""
+  dst TEXT)"""
+SQL_TASK_ADD = """INSERT INTO task (guid, name, src, dst)
+  VALUES (:guid, :name, :src, :dst)"""
 SQL_TASK_LIST = """SELECT * FROM task"""
 SQL_TASK_DEL_BY_NAME = """DELETE FROM task WHERE name = :name"""
 
@@ -49,8 +48,7 @@ class Settings( object ) :
           'guid' : str( uuid.uuid4() ),
           'name' : i_sName,
           'src' : i_sSrc,
-          'dst' : i_sDst,
-          'index_last' : 0 }
+          'dst' : i_sDst }
         oConn.execute( SQL_TASK_ADD, mValues )
       except sqlite3.IntegrityError :
         ##  Name not unique.

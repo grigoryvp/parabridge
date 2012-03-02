@@ -77,14 +77,12 @@ class Worker( threading.Thread ) :
     try :
       oDb = pyparadox.open( i_sSrc, shutdown = self.m_oShutdown )
     except pyparadox.Shutdown :
-      print( "shutdown catched" )
       return False
     return True
 
   def shutdown( self ) :
     self.m_fShutdown = True
     ##! After |m_fShutdown| is set to prevent races.
-    print( "shutdown set" )
     self.m_oShutdown.set()
 
   @classmethod
