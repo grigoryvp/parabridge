@@ -30,6 +30,8 @@ SQL_INDEX_LAST_UPDATE = """UPDATE index_last SET index_last = :index_last
   WHERE guid = :guid AND file = :file"""
 SQL_INDEX_LAST_ADD = """INSERT INTO index_last (guid, file, index_last)
   VALUES (:guid, :file, :index_last)"""
+SQL_INDEX_LAST_GET = """SELECT index_last FROM index_last WHERE
+  guid = :guid AND file = :file"""
 
 class Settings( object ) :
 
@@ -82,6 +84,18 @@ class Settings( object ) :
         return
       ##  No record for guid and name pair: add one.
       oConn.execute( SQL_INDEX_LAST_ADD, mArgs )
+
+  @classmethod
+  def indexLastGet( self, i_sGuid, i_sFile ) :
+    with sqlite3.connect( FILE_CFG ) as oConn :
+      oConn.row_factory = sqlite3.Row
+      mArgs = { 'guid' : i_sGuid, 'file' : i_sFile }
+      lRet = oConn.execute( SQL_INDEX_LAST_GET, mArgs ).fetchall()
+      if 0 == len( lRet ) :
+        return None
+      if len( lRet ) > 1 :
+        raise Exception( "Consistency error." )
+      return lRet[ 0 ][ 'index_last' ]
 
   @classmethod
   def taskDelByName( self, i_sName ) :

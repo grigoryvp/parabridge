@@ -39,10 +39,10 @@ class Worker( threading.Thread ) :
       for mTask in lTasks :
         sSrc = os.path.expanduser( mTask[ 'src' ] )
         sDst = os.path.expanduser( mTask[ 'dst' ] )
-        self.processTask( mTask[ 'name' ], sSrc, sDst )
+        self.processTask( mTask[ 'guid' ], mTask[ 'name' ], sSrc, sDst )
       time.sleep( 1 )
 
-  def processTask( self, i_sName, i_sSrc, i_sDst ) :
+  def processTask( self, i_sGuid, i_sName, i_sSrc, i_sDst ) :
     def setRes( i_sTxt ) :
       self.m_mResults[ i_sName ] = i_sTxt
       return False
@@ -63,7 +63,7 @@ class Worker( threading.Thread ) :
     nTotal = len( lSrcFiles )
     for i, sSrcFile in enumerate( lSrcFiles ) :
       setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
-      if self.processParadoxFile( sSrcFile, i_sDst ) :
+      if self.processParadoxFile( i_sGuid, sSrcFile, i_sDst ) :
         if self.m_fShutdown :
           return
         lProcessed.append( True )
@@ -73,9 +73,31 @@ class Worker( threading.Thread ) :
 
   ##x Process individual Paradox |.db| file and synchronize specified
   ##  SQLite database file with it.
-  def processParadoxFile( self, i_sSrc, i_sDst ) :
+  def processParadoxFile( self, i_sGuid, i_sSrc, i_sDst ) :
     try :
-      oDb = pyparadox.open( i_sSrc, shutdown = self.m_oShutdown )
+      sFile = os.path.basename( i_sSrc )
+      nIndexLast = Settings.indexLastGet( i_sGuid, sFile )
+      mArgs = { 'shutdown' : self.m_oShutdown }
+      ##  First time parse of this file?
+      if nIndexLast is None :
+        oDb = pyparadox.open( i_sSrc, ** mArgs )
+      else :
+        mArgs[ 'start' ] = nIndexLast + 1
+        oDb = pyparadox.open( i_sSrc, ** mArgs )
+      ##  We can handle only tables that has autoincrement field (if
+      ##  such field exists, it will be first for Paradox database. We
+      ##  need it to detect updates).
+      if len( oDb.fields ) < 1 or not oDb.fields[ 0 ].IsAutoincrement() :
+        return
+      ##  Table empty or not updated since saved last index.
+      if 0 == len( oDb.records ) :
+        return
+      for oRecord in oDb.records :
+        nIndex = oRecord.fields[ 0 ]
+        if nIndexLast is not None and nIndexLast >= nIndex :
+          raise Exception( "Consistency error." )
+        nIndexLast = nIndex
+      print( "{0}: {1}".format( sFile, nIndexLast ) )
     except pyparadox.Shutdown :
       return False
     return True
