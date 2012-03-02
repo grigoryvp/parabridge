@@ -9,6 +9,7 @@ import socket
 import os
 import json
 import re
+import sqlite3
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from settings import Settings
 
@@ -61,19 +62,20 @@ class Worker( threading.Thread ) :
       return setRes( "No .db files in \"{0}\".".format( i_sSrc ) )
     lProcessed = []
     nTotal = len( lSrcFiles )
-    for i, sSrcFile in enumerate( lSrcFiles ) :
-      setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
-      if self.processParadoxFile( i_sGuid, sSrcFile, i_sDst ) :
-        if self.m_fShutdown :
-          return
-        lProcessed.append( True )
+    with sqlite3.connect( i_sDst ) as oConn :
+      for i, sSrcFile in enumerate( lSrcFiles ) :
+        setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
+        if self.processParadoxFile( i_sGuid, sSrcFile, oConn ) :
+          if self.m_fShutdown :
+            return
+          lProcessed.append( True )
     sTime = time.strftime( '%Y.%m.%d %H:%M:%S' )
     nProcessed = len( lProcessed )
     setRes( "Processed {0}/{1} at {2}.".format( nProcessed, nTotal, sTime ) )
 
   ##x Process individual Paradox |.db| file and synchronize specified
   ##  SQLite database file with it.
-  def processParadoxFile( self, i_sGuid, i_sSrc, i_sDst ) :
+  def processParadoxFile( self, i_sGuid, i_sSrc, i_oConn ) :
     try :
       sFile = os.path.basename( i_sSrc )
       nIndexLast = Settings.indexLastGet( i_sGuid, sFile )
@@ -97,10 +99,14 @@ class Worker( threading.Thread ) :
         if nIndexLast is not None and nIndexLast >= nIndex :
           raise Exception( "Consistency error." )
         nIndexLast = nIndex
-      print( "{0}: {1}".format( sFile, nIndexLast ) )
+        self.processParadoxRecord( oRecord, i_oConn )
+      Settings.indexLastSet( i_sGuid, sFile, nIndexLast )
     except pyparadox.Shutdown :
       return False
     return True
+
+  def processParadoxRecord( self, i_oRecord, i_oConn ) :
+    pass
 
   def shutdown( self ) :
     self.m_fShutdown = True

@@ -73,7 +73,7 @@ class Settings( object ) :
         self.notifyIfNeeded()
 
   @classmethod
-  def indexLastSet( i_sGuid, i_sFile, i_nIndex ) :
+  def indexLastSet( self, i_sGuid, i_sFile, i_nIndex ) :
     with sqlite3.connect( FILE_CFG ) as oConn :
       mArgs = {
         'guid' : i_sGuid,
@@ -100,6 +100,7 @@ class Settings( object ) :
   @classmethod
   def taskDelByName( self, i_sName ) :
     with sqlite3.connect( FILE_CFG ) as oConn :
+      oConn.row_factory = sqlite3.Row
       try :
         mArgs = { 'name' : i_sName }
         oRow = oConn.execute( SQL_TASK_GUID_BY_NAME, mArgs ).fetchone()
