@@ -12,8 +12,9 @@ import re
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from settings import Settings
 
-# Allow to import packages from 'vendor' subfolder.
-sys.path.append( '{0}/vendor'.format( sys.path[ 0 ] ) )
+##  Allow to import packages from 'vendor' subfolder.
+##! Put first so it |pyparadox| is installed, it is taken from |vendor|.
+sys.path.insert( 0, '{0}/vendor'.format( sys.path[ 0 ] ) )
 
 import pyparadox
 
@@ -24,6 +25,7 @@ class Worker( threading.Thread ) :
   def __init__( self ) :
     super( Worker, self ).__init__()
     self.m_fShutdown = False
+    self.m_oShutdown = threading.Event()
     self.m_fCfgChanged = True
     self.m_mResults = {}
     self.m_oTimeReloadLast = None
@@ -62,6 +64,8 @@ class Worker( threading.Thread ) :
     for i, sSrcFile in enumerate( lSrcFiles ) :
       setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
       if self.processParadoxFile( sSrcFile, i_sDst ) :
+        if self.m_fShutdown :
+          return
         lProcessed.append( True )
     sTime = time.strftime( '%Y.%m.%d %H:%M:%S' )
     nProcessed = len( lProcessed )
@@ -70,11 +74,18 @@ class Worker( threading.Thread ) :
   ##x Process individual Paradox |.db| file and synchronize specified
   ##  SQLite database file with it.
   def processParadoxFile( self, i_sSrc, i_sDst ) :
-    oDb = pyparadox.open( i_sSrc )
+    try :
+      oDb = pyparadox.open( i_sSrc, shutdown = self.m_oShutdown )
+    except pyparadox.Shutdown :
+      print( "shutdown catched" )
+      return False
     return True
 
   def shutdown( self ) :
     self.m_fShutdown = True
+    ##! After |m_fShutdown| is set to prevent races.
+    print( "shutdown set" )
+    self.m_oShutdown.set()
 
   @classmethod
   def instance( self ) :
