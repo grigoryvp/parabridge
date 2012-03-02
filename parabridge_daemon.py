@@ -99,14 +99,14 @@ class Worker( threading.Thread ) :
         if nIndexLast is not None and nIndexLast >= nIndex :
           raise Exception( "Consistency error." )
         nIndexLast = nIndex
-        self.processParadoxRecord( oRecord, i_oConn )
+        self.processParadoxRecord( oDb, oRecord, i_oConn )
       Settings.indexLastSet( i_sGuid, sFile, nIndexLast )
     except pyparadox.Shutdown :
       return False
     return True
 
-  def processParadoxRecord( self, i_oRecord, i_oConn ) :
-    pass
+  def processParadoxRecord( self, i_oDb, i_oRecord, i_oConn ) :
+    sTableName = i_oDb.table_name
 
   def shutdown( self ) :
     self.m_fShutdown = True
