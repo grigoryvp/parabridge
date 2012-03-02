@@ -17,7 +17,7 @@ SQL_CREATE = """
     dst TEXT);
   CREATE TABLE IF NOT EXISTS index_last (
     guid TEXT,
-    name TEXT,
+    file TEXT,
     index_last INTEGER);
 """
 SQL_TASK_ADD = """INSERT INTO task (guid, name, src, dst)
@@ -26,6 +26,10 @@ SQL_TASK_LIST = """SELECT * FROM task"""
 SQL_TASK_DEL_BY_NAME = """DELETE FROM task WHERE name = :name"""
 SQL_TASK_GUID_BY_NAME = """SELECT guid FROM task WHERE name = :name"""
 SQL_INDEX_LAST_DEL = """DELETE FROM index_last WHERE guid = :guid"""
+SQL_INDEX_LAST_UPDATE = """UPDATE index_last SET index_last = :index_last
+  WHERE guid = :guid AND file = :file"""
+SQL_INDEX_LAST_ADD = """INSERT INTO index_last (guid, file, index_last)
+  VALUES (:guid, :file, :index_last)"""
 
 class Settings( object ) :
 
@@ -65,6 +69,19 @@ class Settings( object ) :
         return True
       finally :
         self.notifyIfNeeded()
+
+  @classmethod
+  def indexLastSet( i_sGuid, i_sFile, i_nIndex ) :
+    with sqlite3.connect( FILE_CFG ) as oConn :
+      mArgs = {
+        'guid' : i_sGuid,
+        'file' : i_sFile,
+        'index_last' : i_nIndex }
+      oRet = oConn.execute( SQL_INDEX_LAST_UPDATE, mArgs )
+      if oRet.rowcount > 0 :
+        return
+      ##  No record for guid and name pair: add one.
+      oConn.execute( SQL_INDEX_LAST_ADD, mArgs )
 
   @classmethod
   def taskDelByName( self, i_sName ) :
