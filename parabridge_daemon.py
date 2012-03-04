@@ -10,6 +10,7 @@ import os
 import json
 import re
 import sqlite3
+import datetime
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from settings import Settings
 
@@ -41,6 +42,7 @@ class Worker( threading.Thread ) :
         sSrc = os.path.expanduser( mTask[ 'src' ] )
         sDst = os.path.expanduser( mTask[ 'dst' ] )
         self.processTask( mTask[ 'guid' ], mTask[ 'name' ], sSrc, sDst )
+      ## Sleep some time so we don't overuse HDD.
       time.sleep( 1 )
 
   def processTask( self, i_sGuid, i_sName, i_sSrc, i_sDst ) :
@@ -90,23 +92,70 @@ class Worker( threading.Thread ) :
       ##  such field exists, it will be first for Paradox database. We
       ##  need it to detect updates).
       if len( oDb.fields ) < 1 or not oDb.fields[ 0 ].IsAutoincrement() :
-        return
+        return False
       ##  Table empty or not updated since saved last index.
       if 0 == len( oDb.records ) :
-        return
+        return True
       for oRecord in oDb.records :
         nIndex = oRecord.fields[ 0 ]
         if nIndexLast is not None and nIndexLast >= nIndex :
           raise Exception( "Consistency error." )
         nIndexLast = nIndex
-        self.processParadoxRecord( oDb, oRecord, i_oConn )
+        self.processParadoxRecord( oDb, oRecord, i_oConn, sFile )
       Settings.indexLastSet( i_sGuid, sFile, nIndexLast )
     except pyparadox.Shutdown :
       return False
     return True
 
-  def processParadoxRecord( self, i_oDb, i_oRecord, i_oConn ) :
-    sTableName = i_oDb.table_name
+  def processParadoxRecord( self, i_oDb, i_oRecord, i_oConn, i_sFile ) :
+    def FieldName( i_sParadoxName ) :
+      ##! Paradox fields may be named like 'index' that is not a valid
+      ##  name for SQLite.
+      return 'f_{0}'.format( i_sParadoxName.lower() )
+    def FieldKey( i_sParadoxName ) :
+      return ':{0}'.format( FieldName( i_sParadoxName ) )
+    ##! Table name as written in Paradox table file may not be unique among
+    ##  multiple files in single Paradox folder. Use file name as table name
+    ##  for SQLite.
+    mArgs = {
+      'name' : re.sub( '(?i)\.db$', '', i_sFile ).lower(),
+      'fields' : ", ".join( [ FieldName( o.name ) for o in i_oDb.fields ] ),
+      'values' : ", ".join( [ FieldKey( o.name ) for o in i_oDb.fields ] )
+    }
+    lSignatures = []
+    for i, oField in enumerate( i_oDb.fields ) :
+      sName = FieldName( oField.name )
+      ##! Paradox autoincrement field starts from 1, while for SQLite it
+      ##  starts from 0 and adding first item with 1 will raise an error.
+      ##  As workaround, use non-autoincrement field for SQLite.
+      if pyparadox.CField.AUTOINCREMENT == oField.type :
+        sSignature = "{0} INTEGER".format( sName )
+      else :
+        sSignature = "{0} {1}".format( sName, oField.ToSqliteType() )
+      lSignatures.append( sSignature )
+    mArgs[ 'signature' ] = ", ".join( lSignatures )
+    sQuery = "CREATE TABLE IF NOT EXISTS {name} ({signature})"
+    sQuery = sQuery.format( ** mArgs )
+    print( "\n\n" )
+    print( sQuery )
+    i_oConn.execute( sQuery, mArgs )
+    sQuery = "INSERT INTO {name} ({fields}) VALUES ({values})"
+    sQuery = sQuery.format( ** mArgs )
+    mArgs = {}
+    for i, oField in enumerate( i_oDb.fields ) :
+      uField = i_oRecord.fields[ i ]
+      lUnsupported = [ datetime.time, datetime.date, datetime.datetime ]
+      if str == type( uField ) :
+        uField = uField.decode( 'cp1251' )
+      if type( uField ) in lUnsupported :
+        ##  SQLite don't have time types, use |ISO 8601| string.
+        uField = uField.isoformat()
+      mArgs[ FieldName( oField.name ) ] = uField
+    print( "\n" )
+    print( sQuery )
+    print( "\n" )
+    print( mArgs )
+    i_oConn.execute( sQuery, mArgs )
 
   def shutdown( self ) :
     self.m_fShutdown = True
