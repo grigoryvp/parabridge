@@ -12,7 +12,7 @@ setup(
   url='http://bitbucket.org/eyeofhell/parabridge',
   scripts = [ 'parabridge.py' ],
   packages = [ 'parabridge_core' ],
-  requires = [ 'pyparadox (>=0.1.0)' ],
+  install_requires = [ 'pyparadox>=0.1.0' ],
   classifiers=[
     'Development Status :: 1 - Prototype',
     'Environment :: Console',
