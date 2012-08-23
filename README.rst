@@ -2,10 +2,12 @@
 pyparadox
 =========
 
-A simple python script that can read a paradox database into memory.
+A simple python daemon that can dynamically sync paradox database with
+SQLite database.
 
 Why?
 ====
 
-No such script exist. I use it to convert some old paradox table into SQLite.
+In order to work with legacy apps that only supports paradox databases,
+and reading paradox databases is very slow compared to SQLite.
 
