@@ -1,3 +1,0 @@
-[submodule "vendor/pyparadox"]
-	path = vendor/pyparadox
-	url = git@github.com:eyeofhell/pyparadox.git
