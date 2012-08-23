@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from distutils.core import setup
+import setuptools
 
 setup(
   name="parabridge",
