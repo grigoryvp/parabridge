@@ -136,8 +136,6 @@ class Worker( threading.Thread ) :
     mArgs[ 'signature' ] = ", ".join( lSignatures )
     sQuery = "CREATE TABLE IF NOT EXISTS {name} ({signature})"
     sQuery = sQuery.format( ** mArgs )
-    print( "\n\n" )
-    print( sQuery )
     i_oConn.execute( sQuery, mArgs )
     sQuery = "INSERT INTO {name} ({fields}) VALUES ({values})"
     sQuery = sQuery.format( ** mArgs )
@@ -151,10 +149,6 @@ class Worker( threading.Thread ) :
         ##  SQLite don't have time types, use |ISO 8601| string.
         uField = uField.isoformat()
       mArgs[ FieldName( oField.name ) ] = uField
-    print( "\n" )
-    print( sQuery )
-    print( "\n" )
-    print( mArgs )
     i_oConn.execute( sQuery, mArgs )
 
   def shutdown( self ) :
