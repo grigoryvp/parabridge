@@ -6,12 +6,13 @@ from distutils.core import setup
 setup(
   name="parabridge",
   version='0.1.0',
-  description="A simple python daemon that can dynamically sync paradox database with SQLite database."
+  description="A simple python daemon that can dynamically sync paradox database with SQLite database.",
   author='Grigory Petrov',
   author_email='grigory.v.p@gmail.com',
   url='http://bitbucket.org/eyeofhell/parabridge',
-  packages = [ 'parabridge' ],
-  install_requires = [ 'pyparadox>=0.1.0' ]
+  scripts = [ 'common.py', 'parabridge.py', 'parabridge_daemon.py',
+    'settings.py' ],
+  requires = [ 'pyparadox (>=0.1.0)' ],
   classifiers=[
     'Development Status :: 1 - Prototype',
     'Environment :: Console',
