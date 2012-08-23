@@ -28,7 +28,7 @@ HELP_TASK_DEL = """Deletes task with specified name."""
 HELP_TASK_LIST = """Displays list of added tasks."""
 
 def start( i_oArgs ) :
-  sFile = '{0}/parabridge_daemon.py'.format( sys.path[ 0 ] )
+  sFile = os.path.join( os.path.dirname( __file__ ), "parabridge_daemon.py" )
   subprocess.Popen( [ 'python', sFile, str( COMM_PORT ) ] )
 
 def stop( i_oArgs ) :
