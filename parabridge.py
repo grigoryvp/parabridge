@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding:utf-8 vi:et:ts=2
 
-import parabridge
+import parabridge_core
 
-parabridge.app()
+parabridge_core.app()
 
