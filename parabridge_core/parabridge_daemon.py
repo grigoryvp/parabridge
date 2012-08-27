@@ -42,7 +42,7 @@ class Worker( threading.Thread ) :
         sSrc = os.path.expanduser( mTask[ 'src' ] )
         sDst = os.path.expanduser( mTask[ 'dst' ] )
         self.processTask( mTask[ 'guid' ], mTask[ 'name' ], sSrc, sDst )
-      ## Sleep some time so we don't overuse HDD.
+      ## Sleep some time so we don't overuse HDD and CPU.
       time.sleep( 1 )
 
   def processTask( self, i_sGuid, i_sName, i_sSrc, i_sDst ) :
@@ -68,9 +68,11 @@ class Worker( threading.Thread ) :
       for i, sSrcFile in enumerate( lSrcFiles ) :
         setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
         if self.processParadoxFile( i_sGuid, sSrcFile, oConn ) :
-          if self.m_fShutdown :
-            return
           lProcessed.append( True )
+        if self.m_fShutdown :
+          return
+        ## Sleep some time so we don't overuse HDD and CPU.
+        time.sleep( 1 )
     sTime = time.strftime( '%Y.%m.%d %H:%M:%S' )
     nProcessed = len( lProcessed )
     setRes( "Processed {0}/{1} at {2}.".format( nProcessed, nTotal, sTime ) )
