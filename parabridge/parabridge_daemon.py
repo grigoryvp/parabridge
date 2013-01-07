@@ -1,43 +1,46 @@
 #!/usr/bin/env python
 # coding:utf-8 vi:et:ts=2
 
-import sys
+# parabridge background work daemon.
+# Copyright 2013 Grigory Petrov
+# See LICENSE for details.
+
 import argparse
 import threading
 import time
 import socket
 import os
-import json
 import re
 import sqlite3
 import datetime
 from SimpleXMLRPCServer import SimpleXMLRPCServer
-from settings import Settings
-
-##  Allow to import packages from 'vendor' subfolder.
-##! Put first so it |pyparadox| is installed, it is taken from |vendor|.
-sys.path.insert( 0, '{0}/vendor'.format( sys.path[ 0 ] ) )
 
 import pyparadox
 
+import settings
+
+
 class Worker( threading.Thread ) :
 
-  m_oInstance = None
+  __oInstance = None
+
 
   def __init__( self ) :
     super( Worker, self ).__init__()
-    self.m_fShutdown = False
-    self.m_oShutdown = threading.Event()
-    self.m_fCfgChanged = True
-    self.m_mResults = {}
-    self.m_oTimeReloadLast = None
+    self.__fShutdown = False
+    self.__oShutdown = threading.Event()
+    self.__fCfgChanged = True
+    self.__mResults = {}
+    self.__oTimeReloadLast = None
+
 
   def run( self ) :
-    while not self.m_fShutdown :
-      if self.m_fCfgChanged :
-        lTasks = Settings.taskList()
-        self.m_fCfgChanged = False
-        self.m_oTimeReloadLast = time.localtime()
+    while not self.__fShutdown :
+      lTasks = []
+      if self.__fCfgChanged :
+        lTasks = settings.instance.taskList()
+        self.__fCfgChanged = False
+        self.__oTimeReloadLast = time.localtime()
       for mTask in lTasks :
         sSrc = os.path.expanduser( mTask[ 'src' ] )
         sDst = os.path.expanduser( mTask[ 'dst' ] )
@@ -45,31 +48,35 @@ class Worker( threading.Thread ) :
       ## Sleep some time so we don't overuse HDD and CPU.
       time.sleep( 1 )
 
-  def processTask( self, i_sGuid, i_sName, i_sSrc, i_sDst ) :
+
+  def processTask( self, s_guid, s_name, s_src, s_dst ) :
+
     def setRes( i_sTxt ) :
-      self.m_mResults[ i_sName ] = i_sTxt
+      self.__mResults[ s_name ] = i_sTxt
       return False
-    if not os.path.exists( i_sSrc ) :
-      return setRes( "Path \"{0}\" not found.".format( i_sSrc ) )
-    if not os.path.isdir( i_sSrc ) :
-      return setRes( "Path \"{0}\" is not a directory.".format( i_sSrc ) )
+
+    if not os.path.exists( s_src ) :
+      return setRes( "Path \"{0}\" not found.".format( s_src ) )
+    if not os.path.isdir( s_src ) :
+      return setRes( "Path \"{0}\" is not a directory.".format( s_src ) )
     try :
-      os.makedirs( os.path.dirname( i_sDst ) )
+      os.makedirs( os.path.dirname( s_dst ) )
     except OSError :
       pass
-    lSrcFiles = [ i_sSrc + os.sep + s for s in os.listdir( i_sSrc ) ]
+
+    lSrcFiles = [ s_src + os.sep + s for s in os.listdir( s_src ) ]
     lSrcFiles = [ s for s in lSrcFiles if os.path.isfile( s ) ]
     lSrcFiles = [ s for s in lSrcFiles if re.search( "(?i)\.db$", s ) ]
     if 0 == len( lSrcFiles ) :
-      return setRes( "No .db files in \"{0}\".".format( i_sSrc ) )
+      return setRes( "No .db files in \"{0}\".".format( s_src ) )
     lProcessed = []
     nTotal = len( lSrcFiles )
-    with sqlite3.connect( i_sDst ) as oConn :
+    with sqlite3.connect( s_dst ) as oConn :
       for i, sSrcFile in enumerate( lSrcFiles ) :
         setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
-        if self.processParadoxFile( i_sGuid, sSrcFile, oConn ) :
+        if self.processParadoxFile( s_guid, sSrcFile, oConn ) :
           lProcessed.append( True )
-        if self.m_fShutdown :
+        if self.__fShutdown :
           return
         ## Sleep some time so we don't overuse HDD and CPU.
         time.sleep( 1 )
@@ -77,19 +84,21 @@ class Worker( threading.Thread ) :
     nProcessed = len( lProcessed )
     setRes( "Processed {0}/{1} at {2}.".format( nProcessed, nTotal, sTime ) )
 
+
   ##x Process individual Paradox |.db| file and synchronize specified
   ##  SQLite database file with it.
-  def processParadoxFile( self, i_sGuid, i_sSrc, i_oConn ) :
+  def processParadoxFile( self, s_guid, s_src, o_conn ) :
+
     try :
-      sFile = os.path.basename( i_sSrc )
-      nIndexLast = Settings.indexLastGet( i_sGuid, sFile )
-      mArgs = { 'shutdown' : self.m_oShutdown }
+      sFile = os.path.basename( s_src )
+      nIndexLast = settings.instance.indexLastGet( s_guid, sFile )
+      mArgs = { 'shutdown' : self.__oShutdown }
       ##  First time parse of this file?
       if nIndexLast is None :
-        oDb = pyparadox.open( i_sSrc, ** mArgs )
+        oDb = pyparadox.open( s_src, ** mArgs )
       else :
         mArgs[ 'start' ] = nIndexLast + 1
-        oDb = pyparadox.open( i_sSrc, ** mArgs )
+        oDb = pyparadox.open( s_src, ** mArgs )
       ##  We can handle only tables that has autoincrement field (if
       ##  such field exists, it will be first for Paradox database. We
       ##  need it to detect updates).
@@ -103,13 +112,14 @@ class Worker( threading.Thread ) :
         if nIndexLast is not None and nIndexLast >= nIndex :
           raise Exception( "Consistency error." )
         nIndexLast = nIndex
-        self.processParadoxRecord( oDb, oRecord, i_oConn, sFile )
-      Settings.indexLastSet( i_sGuid, sFile, nIndexLast )
+        self.processParadoxRecord( oDb, oRecord, o_conn, sFile )
+      settings.instance.indexLastSet( s_guid, sFile, nIndexLast )
     except pyparadox.Shutdown :
       return False
     return True
 
-  def processParadoxRecord( self, i_oDb, i_oRecord, i_oConn, i_sFile ) :
+
+  def processParadoxRecord( self, o_db, o_record, o_conn, s_file ) :
     def FieldName( i_sParadoxName ) :
       ##! Paradox fields may be named like 'index' that is not a valid
       ##  name for SQLite.
@@ -120,12 +130,12 @@ class Worker( threading.Thread ) :
     ##  multiple files in single Paradox folder. Use file name as table name
     ##  for SQLite.
     mArgs = {
-      'name' : re.sub( '(?i)\.db$', '', i_sFile ).lower(),
-      'fields' : ", ".join( [ FieldName( o.name ) for o in i_oDb.fields ] ),
-      'values' : ", ".join( [ FieldKey( o.name ) for o in i_oDb.fields ] )
+      'name' : re.sub( '(?i)\.db$', '', s_file ).lower(),
+      'fields' : ", ".join( [ FieldName( o.name ) for o in o_db.fields ] ),
+      'values' : ", ".join( [ FieldKey( o.name ) for o in o_db.fields ] )
     }
     lSignatures = []
-    for i, oField in enumerate( i_oDb.fields ) :
+    for i, oField in enumerate( o_db.fields ) :
       sName = FieldName( oField.name )
       ##! Paradox autoincrement field starts from 1, while for SQLite it
       ##  starts from 0 and adding first item with 1 will raise an error.
@@ -138,12 +148,12 @@ class Worker( threading.Thread ) :
     mArgs[ 'signature' ] = ", ".join( lSignatures )
     sQuery = "CREATE TABLE IF NOT EXISTS {name} ({signature})"
     sQuery = sQuery.format( ** mArgs )
-    i_oConn.execute( sQuery, mArgs )
+    o_conn.execute( sQuery, mArgs )
     sQuery = "INSERT INTO {name} ({fields}) VALUES ({values})"
     sQuery = sQuery.format( ** mArgs )
     mArgs = {}
-    for i, oField in enumerate( i_oDb.fields ) :
-      uField = i_oRecord.fields[ i ]
+    for i, oField in enumerate( o_db.fields ) :
+      uField = o_record.fields[ i ]
       lUnsupported = [ datetime.time, datetime.date, datetime.datetime ]
       if str == type( uField ) :
         uField = uField.decode( 'cp1251' )
@@ -151,42 +161,55 @@ class Worker( threading.Thread ) :
         ##  SQLite don't have time types, use |ISO 8601| string.
         uField = uField.isoformat()
       mArgs[ FieldName( oField.name ) ] = uField
-    i_oConn.execute( sQuery, mArgs )
+    o_conn.execute( sQuery, mArgs )
+
 
   def shutdown( self ) :
-    self.m_fShutdown = True
-    ##! After |m_fShutdown| is set to prevent races.
-    self.m_oShutdown.set()
+    self.__fShutdown = True
+    ##! After |__fShutdown| is set to prevent races.
+    self.__oShutdown.set()
+
 
   @classmethod
-  def instance( self ) :
-    if not self.m_oInstance :
-      self.m_oInstance = Worker()
-    return self.m_oInstance
+  def instance( cls ) :
+    if not cls.__oInstance :
+      cls.__oInstance = Worker()
+    return cls.__oInstance
 
-  def cfgChanged( self ) : self.m_fCfgChanged = True
 
-  def results( self ) : return self.m_mResults
+  def cfgChanged( self ) :
+    self.__fCfgChanged = True
 
-  def timeReloadLast( self ) : return self.m_oTimeReloadLast
+
+  def results( self ) :
+    return self.__mResults
+
+
+  def timeReloadLast( self ) :
+    return self.__oTimeReloadLast
+
 
 class Server( SimpleXMLRPCServer, object ) :
 
-  def __init__( self, i_nPort ) :
-    gAddr = ( 'localhost', i_nPort )
-    super( Server, self ).__init__( gAddr, logRequests = False )
-    self.fShutdown = False
+
+  def __init__( self, n_port ) :
+    gAddr = ( 'localhost', n_port )
+    SimpleXMLRPCServer.__init__( self, gAddr, logRequests = False )
+    self.__fShutdown = False
     self.register_function( self.stop )
     self.register_function( self.status )
-    self.register_function( self.cfg_changed )
+    self.register_function( self.cfgChanged )
 
-  def serve_forever( self ) :
-    while not self.fShutdown :
+
+  def serve_forever( self, ** _ ) :
+    while not self.__fShutdown :
       self.handle_request()
 
+
   def stop( self ) :
-    self.fShutdown = True
+    self.__fShutdown = True
     return True
+
 
   def status( self ) :
     oTimeReloadLast = Worker.instance().timeReloadLast()
@@ -198,11 +221,13 @@ class Server( SimpleXMLRPCServer, object ) :
       sMsg += "\n{0}:\n\t {1}".format( sKey, mResults[ sKey ] )
     return re.sub( '\t', ' ', re.sub( ' +', ' ', sMsg ) )
 
-  def cfg_changed( self ) :
+
+  def cfgChanged( self ) :
     Worker.instance().cfgChanged()
     return True
 
-Settings.init()
+
+settings.instance.init()
 oParser = argparse.ArgumentParser( description = "Parabridge daemon" )
 oParser.add_argument( 'port', type = int, help = "Port to listen on" )
 oArgs = oParser.parse_args()

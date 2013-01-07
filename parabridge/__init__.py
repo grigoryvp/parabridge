@@ -2,15 +2,14 @@
 # coding:utf-8 vi:et:ts=2
 
 import os
-import sys
 import argparse
 import subprocess
 import xmlrpclib
-import json
 import socket
 import logging
-from settings import Settings
-from common import *
+
+import settings
+import info
 
 HELP_APP = """Paradox to SQLite bridge. This tool monitors specified
   Paradox database and reflects all changes to specified SQLite database
@@ -27,37 +26,40 @@ HELP_TASK_ADD = """Adds task with specified name (name can be used later
 HELP_TASK_DEL = """Deletes task with specified name."""
 HELP_TASK_LIST = """Displays list of added tasks."""
 
-def start( i_oArgs ) :
-  sFile = os.path.join( os.path.dirname( __file__ ), "parabridge_daemon.py" )
-  subprocess.Popen( [ 'python', sFile, str( COMM_PORT ) ] )
 
-def stop( i_oArgs ) :
+def start( _ ) :
+  sFile = os.path.join( os.path.dirname( __file__ ), "parabridge_daemon.py" )
+  subprocess.Popen( [ 'python', sFile, str( info.COMM_PORT ) ] )
+
+
+def stop( _ ) :
   try :
-    oSrv = xmlrpclib.ServerProxy( COMM_ADDR )
+    oSrv = xmlrpclib.ServerProxy( info.COMM_ADDR )
     oSrv.stop()
   except socket.error :
     pass
 
-def status( i_oArgs ) :
+
+def status( _ ) :
   try :
-    oSrv = xmlrpclib.ServerProxy( COMM_ADDR )
+    oSrv = xmlrpclib.ServerProxy( info.COMM_ADDR )
     print( oSrv.status() )
   except socket.error :
     print( "Daemon is not running." )
 
-def task_add( i_oArgs ) :
-  sName = i_oArgs.task_name
-  sSrc = i_oArgs.task_src
-  sDst = i_oArgs.task_dst
-  if not Settings.taskAdd( sName, sSrc, sDst ) :
+def task_add( m_args ) :
+  sName = m_args[ 'task_name' ]
+  sSrc = m_args[ 'task_src' ]
+  sDst = m_args[ 'task_dst' ]
+  if not settings.instance.taskAdd( sName, sSrc, sDst ) :
     logging.warning( "Already has '{0}' task".format( sName ) )
 
-def task_del( i_oArgs ) :
-  if not Settings.taskDelByName( i_oArgs.task_name ) :
-    logging.warning( "No task named '{0}'".format( i_oArgs.task_name ) )
+def task_del( m_args ) :
+  if not settings.instance.taskDelByName( m_args[ 'task_name' ] ) :
+    logging.warning( "No task named '{0}'".format( m_args[ 'task_name' ] ) )
 
-def task_list( i_oArgs ) :
-  lTasks = Settings.taskList()
+def task_list( _ ) :
+  lTasks = settings.instance.taskList()
   if 0 == len( lTasks ) :
     print( "Tasks list is empty." )
     return
@@ -67,8 +69,8 @@ def task_list( i_oArgs ) :
       mTask[ 'src' ],
       mTask[ 'dst' ] ) )
 
-def app() :
-  Settings.init( notify = True )
+def main() :
+  settings.instance.init( f_notify = True )
   oParser = argparse.ArgumentParser( description = HELP_APP )
   oSubparsers = oParser.add_subparsers()
   oSubparser = oSubparsers.add_parser( 'start', help = HELP_START )
@@ -88,5 +90,5 @@ def app() :
   oSubparser = oSubparsers.add_parser( 'task_list', help = HELP_TASK_LIST )
   oSubparser.set_defaults( handler = task_list )
   oArgs = oParser.parse_args()
-  oArgs.handler( oArgs )
+  oArgs.handler( vars( oArgs ) )
 
