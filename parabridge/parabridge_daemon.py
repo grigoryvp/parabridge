@@ -143,7 +143,7 @@ class Worker( threading.Thread ) :
       if pyparadox.CField.AUTOINCREMENT == oField.type :
         sSignature = "{0} INTEGER".format( sName )
       else :
-        sSignature = "{0} {1}".format( sName, oField.ToSqliteType() )
+        sSignature = "{0} {1}".format( sName, oField.toSqliteType() )
       lSignatures.append( sSignature )
     mArgs[ 'signature' ] = ", ".join( lSignatures )
     sQuery = "CREATE TABLE IF NOT EXISTS {name} ({signature})"
