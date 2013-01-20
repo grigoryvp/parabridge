@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding:utf-8 vi:et:ts=2
 
-# parabridge information
+# parabridge information.
 # Copyright 2013 Grigory Petrov
 # See LICENSE for details.
 

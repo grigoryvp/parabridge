@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # coding:utf-8 vi:et:ts=2
 
+# parabridge command-line entry point.
+# Copyright 2013 Grigory Petrov
+# See LICENSE for details.
+
 import os
 import argparse
 import subprocess
