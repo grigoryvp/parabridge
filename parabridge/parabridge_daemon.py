@@ -22,25 +22,25 @@ import settings
 
 class Worker( threading.Thread ) :
 
-  __oInstance = None
+  _instance_o = None
 
 
   def __init__( self ) :
     super( Worker, self ).__init__()
-    self.__fShutdown = False
-    self.__oShutdown = threading.Event()
-    self.__fCfgChanged = True
-    self.__mResults = {}
-    self.__oTimeReloadLast = None
+    self._shutdown_f = False
+    self._shutdown_o = threading.Event()
+    self._cfgCHanged_f = True
+    self._results_m = {}
+    self._timeReloadLast_o = None
 
 
   def run( self ) :
-    while not self.__fShutdown :
+    while not self._shutdown_f :
       lTasks = []
-      if self.__fCfgChanged :
+      if self._cfgCHanged_f :
         lTasks = settings.instance.taskList()
-        self.__fCfgChanged = False
-        self.__oTimeReloadLast = time.localtime()
+        self._cfgCHanged_f = False
+        self._timeReloadLast_o = time.localtime()
       for mTask in lTasks :
         sSrc = os.path.expanduser( mTask[ 'src' ] )
         sDst = os.path.expanduser( mTask[ 'dst' ] )
@@ -52,7 +52,7 @@ class Worker( threading.Thread ) :
   def processTask( self, s_guid, s_name, s_src, s_dst ) :
 
     def setRes( i_sTxt ) :
-      self.__mResults[ s_name ] = i_sTxt
+      self._results_m[ s_name ] = i_sTxt
       return False
 
     if not os.path.exists( s_src ) :
@@ -76,7 +76,7 @@ class Worker( threading.Thread ) :
         setRes( "Processing {0}/{1}".format( i + 1, nTotal ) )
         if self.processParadoxFile( s_guid, sSrcFile, oConn ) :
           lProcessed.append( True )
-        if self.__fShutdown :
+        if self._shutdown_f :
           return
         ## Sleep some time so we don't overuse HDD and CPU.
         time.sleep( 1 )
@@ -92,7 +92,7 @@ class Worker( threading.Thread ) :
     try :
       sFile = os.path.basename( s_src )
       nIndexLast = settings.instance.indexLastGet( s_guid, sFile )
-      mArgs = { 'shutdown' : self.__oShutdown }
+      mArgs = { 'shutdown' : self._shutdown_o }
       ##  First time parse of this file?
       if nIndexLast is None :
         oDb = pyparadox.open( s_src, ** mArgs )
@@ -165,28 +165,28 @@ class Worker( threading.Thread ) :
 
 
   def shutdown( self ) :
-    self.__fShutdown = True
-    ##! After |__fShutdown| is set to prevent races.
-    self.__oShutdown.set()
+    self._shutdown_f = True
+    ##! After |_shutdown_f| is set to prevent races.
+    self._shutdown_o.set()
 
 
   @classmethod
   def instance( cls ) :
-    if not cls.__oInstance :
-      cls.__oInstance = Worker()
-    return cls.__oInstance
+    if not cls._instance_o :
+      cls._instance_o = Worker()
+    return cls._instance_o
 
 
   def cfgChanged( self ) :
-    self.__fCfgChanged = True
+    self._cfgCHanged_f = True
 
 
   def results( self ) :
-    return self.__mResults
+    return self._results_m
 
 
   def timeReloadLast( self ) :
-    return self.__oTimeReloadLast
+    return self._timeReloadLast_o
 
 
 class Server( SimpleXMLRPCServer, object ) :
@@ -195,19 +195,19 @@ class Server( SimpleXMLRPCServer, object ) :
   def __init__( self, n_port ) :
     gAddr = ( 'localhost', n_port )
     SimpleXMLRPCServer.__init__( self, gAddr, logRequests = False )
-    self.__fShutdown = False
+    self._shutdown_f = False
     self.register_function( self.stop )
     self.register_function( self.status )
     self.register_function( self.cfgChanged )
 
 
   def serve_forever( self, ** _ ) :
-    while not self.__fShutdown :
+    while not self._shutdown_f :
       self.handle_request()
 
 
   def stop( self ) :
-    self.__fShutdown = True
+    self._shutdown_f = True
     return True
 
 

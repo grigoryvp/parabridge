@@ -41,20 +41,20 @@ class Settings( object ) :
 
 
   def __init__( self ) :
-    self.__fInit = False
-    self.__fNotify = False
+    self._init_f = False
+    self._notify_f = False
 
 
   def init( self, f_notify = False ) :
-    self.__fNotify = f_notify
-    self.__fInit = True
+    self._notify_f = f_notify
+    self._init_f = True
     with sqlite3.connect( info.FILE_CFG ) as oConn :
       oConn.executescript( SQL_CREATE )
 
 
   ##  Notify daemon process so it can read updated settings.
   def notifyIfNeeded( self ) :
-    if not self.__fNotify :
+    if not self._notify_f :
       return
     try :
       xmlrpclib.ServerProxy( info.COMM_ADDR ).cfg_changed()
