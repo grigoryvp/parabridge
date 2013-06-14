@@ -11,10 +11,10 @@ import pkg_resources
 NAME_SHORT = "parabridge"
 VER_MAJOR = 0
 VER_MINOR = 1
-try :
+try:
   VER_TXT = pkg_resources.require( NAME_SHORT )[ 0 ].version
 ##  Installing via 'setup.py develop'?
-except pkg_resources.DistributionNotFound :
+except pkg_resources.DistributionNotFound:
   VER_BUILD = 0
   VER_TXT = ".".join( map( str, [ VER_MAJOR, VER_MINOR, VER_BUILD ] ) )
 DIR_THIS = os.path.dirname( os.path.abspath( __file__ ) )
