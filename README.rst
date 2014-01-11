@@ -1,6 +1,6 @@
-=========
-pyparadox
-=========
+==========
+parabridge
+==========
 
 A simple python daemon that can dynamically sync paradox database with
 SQLite database.
